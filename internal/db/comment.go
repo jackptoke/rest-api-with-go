@@ -35,7 +35,7 @@ func (d *Database) GetComment(
 		ctx,
 		`SELECT id, slug, body, author
 				FROM comments
-				WHERE id = $1`, uuid,
+				WHERE id = $1;`, uuid,
 	)
 
 	err := row.Scan(&cmtRow.ID, &cmtRow.Slug, &cmtRow.Body, &cmtRow.Author)
@@ -51,7 +51,7 @@ func (d *Database) GetComments(
 
 	rows, err := d.Client.QueryContext(
 		ctx,
-		`SELECT id, slug, body, author FROM comments`)
+		`SELECT id, slug, body, author FROM comments;`)
 	if err != nil {
 		return []comment.Comment{}, fmt.Errorf("error fetching the comments: %v", err)
 	}
@@ -75,9 +75,9 @@ func (d *Database) GetComments(
 func (d *Database) PostComment(
 	ctx context.Context,
 	cmt comment.Comment) (comment.Comment, error) {
-
+	fmt.Println("Creating a new comment")
 	cmt.ID = uuid.NewV4().String()
-	query := `INSERT INTO comments(ID, Slug, Body, Author) VALUES (:id, :slug, :body, :author)`
+	query := `INSERT INTO comments(ID, Slug, Body, Author) VALUES (:id, :slug, :body, :author);`
 	postRow := CommentRow{
 		ID:     cmt.ID,
 		Slug:   sql.NullString{String: cmt.Slug, Valid: true},
@@ -86,6 +86,12 @@ func (d *Database) PostComment(
 	}
 
 	rows, err := d.Client.NamedQueryContext(ctx, query, postRow)
+	var newCmt CommentRow
+	for rows.Next() {
+		if err := rows.Scan(&newCmt.ID, &newCmt.Slug, &newCmt.Body, &newCmt.Author); err != nil {
+			log.Fatal("Failed to save the comment. Error: ", err)
+		}
+	}
 
 	if err != nil {
 		return comment.Comment{}, fmt.Errorf("error inserting comment: %v", err)
@@ -93,13 +99,13 @@ func (d *Database) PostComment(
 	if err := rows.Close(); err != nil {
 		return comment.Comment{}, fmt.Errorf("error closing rows: %v", err)
 	}
-	return cmt, nil
+	return convertCommentRowToComment(newCmt), nil
 }
 
 func (d *Database) DeleteComment(ctx context.Context, id string) error {
 	_, err := d.Client.ExecContext(
 		ctx,
-		`DELETE FROM comments WHERE id = $1`, id)
+		`DELETE FROM comments WHERE id = $1;`, id)
 	if err != nil {
 		return fmt.Errorf("error deleting comment: %v", err)
 	}
@@ -119,7 +125,7 @@ func (d *Database) UpdateComment(ctx context.Context, id string, cmt comment.Com
                     slug = :slug,
                     author = :author,
                     body = :body
-                    WHERE id = :id`
+                    WHERE id = :id;`
 
 	fmt.Println(query)
 

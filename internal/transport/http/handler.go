@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
 	_ "github.com/gorilla/mux"
@@ -48,6 +49,11 @@ func (h *Handler) mapRoutes() {
 	h.Router.HandleFunc("/api/v1/comment", h.GetComments).Methods("GET")
 	h.Router.HandleFunc("/api/v1/comment/{id}", JWTAuth(h.UpdateComment)).Methods("PUT")
 	h.Router.HandleFunc("/api/v1/comment/{id}", JWTAuth(h.DeleteComment)).Methods("DELETE")
+	h.Router.HandleFunc("/alive", func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(Response{
+			Message: "comment deleted",
+		})
+	}).Methods("GET")
 }
 
 func (h *Handler) Serve() error {

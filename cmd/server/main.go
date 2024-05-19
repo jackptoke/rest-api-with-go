@@ -7,6 +7,8 @@ import (
 	"fibre/internal/transport/http"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
+	_ "golang.org/x/crypto/sha3"
+	_ "golang.org/x/text/language"
 )
 
 func Run() error {

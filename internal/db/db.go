@@ -10,6 +10,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	_ "github.com/mattn/go-sqlite3"
 	"os"
 )
 
@@ -22,6 +23,15 @@ type Database struct {
 //	Ping(context.Context) error
 //	MigrateDB() error
 //}
+
+// Schema - for testing only
+var schema = `
+CREATE TABLE IF NOT EXISTS comments (
+    ID uuid,
+    Slug text,
+    Author text,
+    Body text
+);`
 
 func NewDatabase() (*Database, error) {
 	connxString := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=%s",
@@ -36,6 +46,22 @@ func NewDatabase() (*Database, error) {
 	fmt.Println("Connecting to database at: ", connxString)
 
 	dbConn, err := sqlx.Connect("postgres", "host=postgres port=5432 user=postgres password=password dbname=postgres sslmode=disable timezone=UTC connect_timeout=5")
+	if err != nil {
+		return &Database{}, fmt.Errorf("could not connect to database: %w", err)
+	}
+	return &Database{
+		Client: dbConn,
+	}, nil
+}
+
+func NewTestDatabase() (*Database, error) {
+
+	fmt.Println("Connecting to database at: ")
+
+	dbConn, err := sqlx.Connect("sqlite3", "fiberdb.db?cache=shared&mode=rwc")
+
+	dbConn.MustExec(schema)
+
 	if err != nil {
 		return &Database{}, fmt.Errorf("could not connect to database: %w", err)
 	}
